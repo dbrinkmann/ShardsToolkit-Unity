@@ -1,0 +1,104 @@
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Backup of pre-public git history (kept for local reference only).
+# Safe to delete once you have confirmed the new repo is in good shape.
+.git-old/
+
+# Local scratch files
+*.tmp
+.tmp_*
+
+# IDEs / editors
+.vs/
+.idea/
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# .NET / Mono build output
+**/bin/
+**/obj/
+TestResults/
+
+# Local tool environments
+**/node_modules/
+**/__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.egg-info/
+.eggs/
+.venv/
+venv/
+
+# Unity generated folders (anchored to the project root -- unanchored patterns
+# would also hide legitimate content such as Assets/Temp or Assets/Logs)
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+[Uu]serSettings/
+[Mm]emoryCaptures/
+[Rr]ecordings/
+
+# Unity generated files
+sysinfo.txt
+
+# Baked lighting can be regenerated and may exceed GitHub's blob limit
+LightingData.asset
+LightingData.asset.meta
+
+# Steamworks.NET SDK (download separately, see README)
+Assets/Plugins/Steamworks.NET/
+Assets/Plugins/Steamworks.NET.meta
+Assets/Plugins/x86/
+Assets/Plugins/x86.meta
+Assets/Plugins/x86_64/
+Assets/Plugins/x86_64.meta
+
+# Third-party Unity Asset Store packages cannot be redistributed.
+# If a contributor installs them locally, keep them out of the public repo.
+Assets/BrokenVector/
+Assets/BrokenVector.meta
+
+# Unity Standard Assets: ship only the parts the toolkit actually depends on --
+# Image Effects supplies GlobalFog for the map camera prefabs, and Water supplies
+# the types the tracked Water4 editor scripts compile against. The rest is large
+# art content that is not needed to use the toolkit.
+Assets/Standard Assets/*
+!Assets/Standard Assets/Image Effects (Pro Only)/
+!Assets/Standard Assets/Image Effects (Pro Only).meta
+!Assets/Standard Assets/Water (Pro Only)/
+!Assets/Standard Assets/Water (Pro Only).meta
+Assets/Editor/CrossPlatformInput/
+Assets/Editor/CrossPlatformInput.meta
+
+# Local example/sample content that is not part of the public toolkit
+Assets/AssetBundles/
+Assets/AssetBundles.meta
+Assets/Resources/
+Assets/Resources.meta
+Assets/Legends of Aria Toolkit/Default Object Library/
+Assets/Legends of Aria Toolkit/Default Object Library.meta
+Assets/Legends of Aria Toolkit/Example Custom Map Scenes/
+Assets/Legends of Aria Toolkit/Example Custom Map Scenes.meta
+Assets/Legends of Aria Toolkit/Example Custom Object Libraries/
+Assets/Legends of Aria Toolkit/Example Custom Object Libraries.meta
+
+# Per-machine toolkit settings (committed copy is intentionally absent)
+Assets/Legends of Aria Toolkit/Scripts/Editor/ToolkitSettings.asset
+
+# Pre-baked Aria reference bundles. These contain licensed art that must never
+# be committed to this repository. The toolkit no longer loads them; these rules
+# remain so a stray `git add` cannot pick up local copies.
+Assets/Legends of Aria Toolkit/*.unity3d
+Assets/Legends of Aria Toolkit/*.unity3d.meta
+Assets/Legends of Aria Toolkit/toolkit*.manifest
+Assets/Legends of Aria Toolkit/toolkit*.manifest.meta
+

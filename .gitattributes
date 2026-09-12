@@ -1,0 +1,152 @@
+# Single repo-wide Git attributes: line endings, text types, and Git LFS.
+
+# Default: normalize line endings on commit
+* text=auto
+
+# --- Text: C# / scripts / markup ---
+*.cs text diff=csharp
+*.shader text
+*.cginc text
+*.hlsl text
+*.compute text
+*.glslinc text
+*.rsp text
+*.xml text
+*.json text
+*.txt text
+*.md text
+*.yaml text
+*.yml text
+*.cpp text
+
+# --- Text: Unity YAML assets (optional: unityyamlmerge in ~/.gitconfig) ---
+*.meta text
+*.prefab text
+*.asset text
+*.mat text
+*.anim text
+*.controller text
+*.overrideController text
+*.physicMaterial text
+*.physicsMaterial2D text
+*.playable text
+*.preset text
+*.mask text
+*.brush text
+*.spriteatlas text
+*.terrainlayer text
+*.mixer text
+*.signal text
+*.shadersubgraph text
+*.shadergraph text
+*.vfx text
+*.inputactions text
+*.uxml text
+*.uss text
+*.lighting text
+*.cubemap text
+*.flare text
+*.rendertexture text
+*.guiskin text
+*.asmdef text
+*.js text
+*.html text
+*.plist text
+*.ini text
+*.csv text
+*.fnt text
+*.rtf text
+*.info text
+
+# --- Git LFS: 3D / DCC ---
+*.fbx filter=lfs diff=lfs merge=lfs -text
+*.FBX filter=lfs diff=lfs merge=lfs -text
+*.obj filter=lfs diff=lfs merge=lfs -text
+*.OBJ filter=lfs diff=lfs merge=lfs -text
+*.blend filter=lfs diff=lfs merge=lfs -text
+*.dae filter=lfs diff=lfs merge=lfs -text
+*.3ds filter=lfs diff=lfs merge=lfs -text
+*.dxf filter=lfs diff=lfs merge=lfs -text
+*.spm filter=lfs diff=lfs merge=lfs -text
+
+# --- Git LFS: Unity scenes (often >50MB; GitHub blob limit 100MB) ---
+*.unity filter=lfs diff=lfs merge=lfs -text
+
+# --- Git LFS: large binary-serialized terrain .asset files ---
+# Most .asset files are tiny YAML and stay in git as text. Toolkit-shipped
+# terrain template assets are >20 MB binary-serialized; track them via LFS.
+**/EditorTools/Materials/CollisionTerrain.asset filter=lfs diff=lfs merge=lfs -text
+
+# --- Git LFS: Chromium / CEF (e.g. ZFBrowser) ---
+*.pak filter=lfs diff=lfs merge=lfs -text
+# macOS .app / .framework bundles contain extensionless binaries >100MB
+client/Unity/Assets/COTS/ZFBrowser/**/*.app/** filter=lfs diff=lfs merge=lfs -text
+client/Unity/Assets/COTS/ZFBrowser/**/*.framework/** filter=lfs diff=lfs merge=lfs -text
+
+# --- Git LFS: images / HDR ---
+*.exr filter=lfs diff=lfs merge=lfs -text
+*.tif filter=lfs diff=lfs merge=lfs -text
+*.tiff filter=lfs diff=lfs merge=lfs -text
+*.tga filter=lfs diff=lfs merge=lfs -text
+*.hdr filter=lfs diff=lfs merge=lfs -text
+*.psd filter=lfs diff=lfs merge=lfs -text
+*.png filter=lfs diff=lfs merge=lfs -text
+*.jpg filter=lfs diff=lfs merge=lfs -text
+*.jpeg filter=lfs diff=lfs merge=lfs -text
+*.bmp filter=lfs diff=lfs merge=lfs -text
+*.gif filter=lfs diff=lfs merge=lfs -text
+*.dds filter=lfs diff=lfs merge=lfs -text
+*.iff filter=lfs diff=lfs merge=lfs -text
+*.pict filter=lfs diff=lfs merge=lfs -text
+
+# --- Git LFS: audio / video ---
+*.wav filter=lfs diff=lfs merge=lfs -text
+*.mp3 filter=lfs diff=lfs merge=lfs -text
+*.ogg filter=lfs diff=lfs merge=lfs -text
+*.aif filter=lfs diff=lfs merge=lfs -text
+*.aiff filter=lfs diff=lfs merge=lfs -text
+*.flac filter=lfs diff=lfs merge=lfs -text
+*.m4a filter=lfs diff=lfs merge=lfs -text
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.mov filter=lfs diff=lfs merge=lfs -text
+*.avi filter=lfs diff=lfs merge=lfs -text
+*.webm filter=lfs diff=lfs merge=lfs -text
+*.ogv filter=lfs diff=lfs merge=lfs -text
+
+# --- Git LFS: FMOD / packages / docs archives ---
+*.bank filter=lfs diff=lfs merge=lfs -text
+*.unitypackage filter=lfs diff=lfs merge=lfs -text
+*.zip filter=lfs diff=lfs merge=lfs -text
+*.7z filter=lfs diff=lfs merge=lfs -text
+*.rar filter=lfs diff=lfs merge=lfs -text
+*.pdf filter=lfs diff=lfs merge=lfs -text
+*.chm filter=lfs diff=lfs merge=lfs -text
+*.odt filter=lfs diff=lfs merge=lfs -text
+
+# --- Git LFS: native / .NET / tooling binaries ---
+*.dll filter=lfs diff=lfs merge=lfs -text
+*.exe filter=lfs diff=lfs merge=lfs -text
+*.pdb filter=lfs diff=lfs merge=lfs -text
+*.mdb filter=lfs diff=lfs merge=lfs -text
+*.nupkg filter=lfs diff=lfs merge=lfs -text
+*.snk filter=lfs diff=lfs merge=lfs -text
+*.lib filter=lfs diff=lfs merge=lfs -text
+*.so filter=lfs diff=lfs merge=lfs -text
+*.dylib filter=lfs diff=lfs merge=lfs -text
+*.a filter=lfs diff=lfs merge=lfs -text
+*.bundle filter=lfs diff=lfs merge=lfs -text
+*.aar filter=lfs diff=lfs merge=lfs -text
+*.node filter=lfs diff=lfs merge=lfs -text
+
+# --- Git LFS: fonts ---
+*.ttf filter=lfs diff=lfs merge=lfs -text
+*.otf filter=lfs diff=lfs merge=lfs -text
+*.ttc filter=lfs diff=lfs merge=lfs -text
+
+# --- Git LFS: misc binaries (Unity Assets + elsewhere) ---
+*.bin filter=lfs diff=lfs merge=lfs -text
+*.dat filter=lfs diff=lfs merge=lfs -text
+*.bc filter=lfs diff=lfs merge=lfs -text
+*.sfk filter=lfs diff=lfs merge=lfs -text
+*.ff filter=lfs diff=lfs merge=lfs -text
+*.tmd filter=lfs diff=lfs merge=lfs -text
