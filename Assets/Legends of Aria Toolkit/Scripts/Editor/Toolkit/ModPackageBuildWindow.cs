@@ -1,4 +1,4 @@
-using System.Linq;
+﻿using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -197,7 +197,15 @@ public class ModPackageBuildWindow : EditorWindow
             EditorGUILayout.HelpBox("Build a mod package first before uploading.", MessageType.Warning);
         }
 
-        EditorGUI.BeginDisabledGroup(!packageExists || uploadInProgress || string.IsNullOrEmpty(ToolUtil.Settings.CurrentModName));
+        if (!WorkshopUploader.IsAvailable)
+        {
+            EditorGUILayout.HelpBox(
+                "Steam Workshop upload is unavailable. Install the Steamworks.NET SDK into this "
+                + "project, then add STEAMWORKS_NET to Scripting Define Symbols in Player Settings. "
+                + "Everything else in the toolkit works without it.", MessageType.Info);
+        }
+
+        EditorGUI.BeginDisabledGroup(!WorkshopUploader.IsAvailable || !packageExists || uploadInProgress || string.IsNullOrEmpty(ToolUtil.Settings.CurrentModName));
         if (GUILayout.Button(uploadInProgress ? "Uploading..." : "Upload to Steam Workshop"))
         {
             uploadInProgress = true;

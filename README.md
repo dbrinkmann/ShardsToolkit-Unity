@@ -15,6 +15,11 @@ The toolkit builds a single Workshop package per mod. That package contains the 
   repository (a couple of editor textures, the `ShardsXML.dll`, the
   collision-paint terrain template) are tracked via LFS. Install Git LFS
   once per machine before cloning.
+- `git` on your PATH, plus network access the first time you open the project.
+  One dependency (Steamworks.NET) is a git-URL Unity package, so the Package
+  Manager needs both to resolve it on first open. It is cached afterwards. See
+  [Uploading To Steam Workshop](#uploading-to-steam-workshop) if that ever
+  fails -- it is removable, and the toolkit works without it.
 
 ```sh
 # one-time install per machine
@@ -27,10 +32,11 @@ git clone <this repo url>
 ## License
 
 This repository is published under the [MIT License](LICENSE) — see the
-`LICENSE` file at the repository root. Third-party files included or
-referenced (Unity built-in shader derivatives, the Unity Post Processing
-package, the Unity Community Wiki `CopyTransform`, Steamworks.NET when
-installed locally) are listed in [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md).
+`LICENSE` file at the repository root. Third-party content is listed in
+[`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md): Unity built-in shader
+derivatives, Unity's Post Processing Stack v1 and two Standard Assets folders
+(both vendored here), the Unity Community Wiki `CopyTransform` and
+`Interpolate`, and Steamworks.NET (referenced as a package, not vendored).
 
 ## What This Toolkit Produces
 
@@ -164,7 +170,35 @@ Notes:
 
 ## Custom Object Libraries
 
-To build a custom object library:
+### Creating the library
+
+Use `LoA Toolkit -> Custom Assets -> Create New Custom Object Library`. Select a
+folder in the Project window first to control where the prefab is created. Set
+the library's `BundleName` on the new prefab.
+
+### Adding objects to it
+
+Use `LoA Toolkit -> Custom Assets -> Create New Client Object`. Point it at your
+model or prefab, optionally pick the library to register it in, and it creates a
+client object prefab for you.
+
+Leaving `Source Model` empty creates an empty client object instead, which is
+what you want for spawners, triggers and anything else with no visible mesh. You
+can add a mesh to it later.
+
+Every entry in a library **must have a `ClientObject` component** -- the build
+fails with "contains a prefab without a ClientObject component at index N" if one
+does not. The wizard adds it for you, which is the main reason to use it rather
+than dragging prefabs into the library inspector by hand.
+
+Slot 0 of a library is reserved as the invalid client id and is always left
+empty. Objects start at index 1.
+
+You do not assign client ids yourself. Building the package sets each prefab's
+`ClientId` from its position in the library and stamps `CustomObjectLibrary` with
+the library's `BundleName`.
+
+### Building the library
 
 1. Create or select a `ClientObjectLibrary` prefab.
 2. Set its `BundleName`.
@@ -225,9 +259,35 @@ Requirements:
 - Steam client running
 - logged into a Steam account with access to App ID `3944440`
 - Workshop enabled for the app in Steamworks
-- Steamworks.NET SDK installed locally in the Unity project
 
-The public repo is expected to ignore the Steamworks.NET SDK. Install it locally before using upload features.
+[Steamworks.NET](https://github.com/rlabrecque/Steamworks.NET) is pulled in
+automatically as a Unity package -- see `Packages/manifest.json`, which pins it
+to a specific version. Unity fetches it the first time you open the project, so
+there is nothing to install by hand. It ships the native Steam binaries for
+Windows, macOS, Linux and Android, and is MIT licensed.
+
+Because it is a git URL rather than a registry package, be aware of what that
+costs you:
+
+- `git` must be on your PATH. If you cloned this repository you already have it.
+- The first time you open the project needs network access. After that the
+  package is cached locally and opens offline.
+- It is an external dependency. If that repository moves, is renamed, or the
+  pinned tag is deleted, package resolution fails and Unity will not open the
+  project cleanly. Unity reports this as a Package Manager error on startup.
+
+If resolution ever fails, you do not need to wait for a fix. Remove the
+`com.rlabrecque.steamworks.net` line from `Packages/manifest.json` and either:
+
+- install Steamworks.NET manually under `Assets/Plugins/Steamworks.NET` (that
+  path is gitignored, and the `STEAMWORKS_NET` define is already set, so upload
+  keeps working), or
+- leave it out entirely.
+
+With it left out the toolkit still compiles. The upload code is guarded behind
+the `STEAMWORKS_NET` scripting define, so clearing that define in Player
+Settings disables the upload button and the Build Mod Package window explains
+why. Everything else in the toolkit works without Steam.
 
 Workflow:
 
@@ -240,6 +300,41 @@ Workflow:
 On success, the toolkit shows the Workshop `Published File ID`.
 
 Use that ID as the server-side `PackageId`.
+
+## Iterating On A Mod
+
+Going through Steam Workshop on every change is slow and, worse, it fails
+quietly: the client happily loads an old bundle with no error. Most of the time
+lost building a mod is spent not realising the client is still running a stale
+package, so it is worth knowing how to check.
+
+### Steam Workshop behaviour
+
+Workshop is the right choice for release, but know how it behaves:
+
+- **Subscribe to your own item.** Steam only tracks updates for items you are
+  subscribed to. If you are not subscribed, the client downloads the package
+  once and Steam then reports it as installed and up to date forever -- you will
+  keep loading the first version you ever uploaded, with no error anywhere.
+- **Updates can lag.** Even when subscribed, Steam is often slow to flag an
+  update. Unsubscribing, waiting a few seconds, and resubscribing is the usual
+  remedy. This is a long-standing Steam issue, not a toolkit one.
+- **To force a re-download**, delete the item's folder under
+  `steamapps/workshop/content/<appid>/<publishedfileid>` and restart the client.
+  With the folder gone the client treats the item as not installed and fetches
+  it again.
+
+### Checking which version the client actually loaded
+
+The client logs the package it loaded on startup. In the player log, look for:
+
+```text
+[CustomBundleLibrary] Loaded mod-manifest.json for mod '<name>': ... BuildVersion=<timestamp> ...
+```
+
+Compare that `BuildVersion` against the one in your built `mod-manifest.json`.
+If they differ, the client is running an old package and no amount of rebuilding
+will change what you see in game until it picks up the new one.
 
 ## Dedicated Server Launcher / Cluster Config
 
@@ -294,8 +389,8 @@ For Steam Workshop packages, the client downloads each mod package separately an
 
 ## Current Limitations / Notes
 
-- Steamworks upload requires a local Steamworks.NET SDK install and Steam client access
-- The Steamworks.NET SDK is intentionally not committed to this repository (see `.gitignore` and the install instructions above)
+- Steamworks upload requires the Steam client running and access to the app's Workshop
+- Steamworks.NET is pulled in as a Unity package, so first open needs `git` and network access
 - Custom map world names used by the server must match the scene bundle names produced by the package manifest
 - The base game's default object library is not distributed with this toolkit.
   Editors that preview base objects fall back to your own custom object
@@ -316,5 +411,10 @@ For Steam Workshop packages, the client downloads each mod package separately an
    - package contents
    - `mod-manifest.json`
    - server-side XML under `ModsPath`
+
 7. Upload to Steam Workshop.
-8. Put the returned `PackageId` into the server config.
+8. Put the returned `PackageId` into the server config as a
+   `Source="SteamWorkshop"` mod entry.
+9. Subscribe to your own Workshop item, or the client will keep loading the
+   first version you uploaded. See [Iterating On A Mod](#iterating-on-a-mod),
+   which also covers how to confirm which package the client actually loaded.

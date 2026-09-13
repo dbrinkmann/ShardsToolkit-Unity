@@ -54,7 +54,9 @@ sysinfo.txt
 LightingData.asset
 LightingData.asset.meta
 
-# Steamworks.NET SDK (download separately, see README)
+# Steamworks.NET is a Unity package (see Packages/manifest.json), not vendored.
+# These rules cover an older manual SDK install so a leftover local copy is never
+# committed. A manual install also collides with the package -- delete it if present.
 Assets/Plugins/Steamworks.NET/
 Assets/Plugins/Steamworks.NET.meta
 Assets/Plugins/x86/

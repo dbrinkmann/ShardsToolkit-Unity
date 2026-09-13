@@ -1,11 +1,16 @@
-using System;
+﻿using System;
 using System.IO;
 using UnityEditor;
 using UnityEngine;
+#if STEAMWORKS_NET
 using Steamworks;
+#endif
 
 public class WorkshopUploader
 {
+#if STEAMWORKS_NET
+    public static bool IsAvailable { get { return true; } }
+
     static bool steamInitialized = false;
     static CallResult<CreateItemResult_t> createItemResult;
     static CallResult<SubmitItemUpdateResult_t> submitItemResult;
@@ -199,4 +204,34 @@ public class WorkshopUploader
         });
         submitItemResult.Set(call);
     }
+
+#else
+    // Steamworks.NET is not installed, or the STEAMWORKS_NET scripting define is
+    // not set. Workshop upload is unavailable; everything else in the toolkit
+    // works normally. See the README section "Uploading To Steam Workshop".
+    const string c_NotInstalled =
+        "Steam Workshop upload is unavailable: Steamworks.NET is not installed, " +
+        "or the STEAMWORKS_NET scripting define is not set. See the README.";
+
+    public static bool InitSteam()
+    {
+        Debug.LogError("[WorkshopUploader] " + c_NotInstalled);
+        return false;
+    }
+
+    public static void ShutdownSteam()
+    {
+    }
+
+    public static void UploadPackage(string packageRootPath, string modName, ulong existingFileId, Action<bool, string, ulong> callback)
+    {
+        Debug.LogError("[WorkshopUploader] " + c_NotInstalled);
+        if (callback != null)
+        {
+            callback(false, c_NotInstalled, 0);
+        }
+    }
+
+    public static bool IsAvailable { get { return false; } }
+#endif
 }

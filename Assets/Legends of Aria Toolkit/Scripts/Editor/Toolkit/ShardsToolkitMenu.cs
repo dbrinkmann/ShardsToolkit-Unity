@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+﻿// SPDX-License-Identifier: MIT
 // Copyright (c) 2026 Emergent Worlds
 // Originally part of the Shards Engine Toolkit; released under the MIT License.
 // See LICENSE in the repository root.
@@ -44,7 +44,14 @@ public class ShardsToolkitMenu
         libraryWizardWindow.title = "Create New Object Library";
     }
 
-    [MenuItem("LoA Toolkit/Custom Assets/Create New UI Texture Library", false, 6)]
+    [MenuItem("LoA Toolkit/Custom Assets/Create New Client Object", false, 6)]
+    public static void CreateNewClientObject()
+    {
+        ClientObjectWizard clientObjectWizard = EditorWindow.GetWindow(typeof(ClientObjectWizard)) as ClientObjectWizard;
+        clientObjectWizard.titleContent = new GUIContent("Create Client Object");
+    }
+
+    [MenuItem("LoA Toolkit/Custom Assets/Create New UI Texture Library", false, 7)]
     public static void CreateNewUITextureLibrary()
     {
         UILibraryWizard libraryWizardWindow = EditorWindow.GetWindow(typeof(UILibraryWizard)) as UILibraryWizard;

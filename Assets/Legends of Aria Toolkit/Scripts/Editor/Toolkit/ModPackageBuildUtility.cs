@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -42,13 +42,11 @@ public static class ModPackageBuildUtility
             Directory.CreateDirectory(sceneOutputPath);
             Directory.CreateDirectory(objectOutputPath);
 
-            List<ModPackageBundleManifest> sceneBundles = new List<ModPackageBundleManifest>();
-            foreach (SceneAsset sceneAsset in (ToolUtil.Settings.ModScenes ?? new SceneAsset[0]).Where(item => item != null))
-            {
-                sceneBundles.Add(BuildSceneBundle(sceneAsset, tempBuildPath, sceneOutputPath));
-            }
-
-            List<ModPackageBundleManifest> objectBundles = new List<ModPackageBundleManifest>();
+            // Client ids must be assigned before any scene is built. Building a scene writes each
+            // placed object's ClientId into PermanentObjects.xml, so if ids were assigned afterwards
+            // a newly added object would be recorded as client id 0 and only pick up its real id on
+            // the next build.
+            List<ClientObjectLibrary> libraries = new List<ClientObjectLibrary>();
             foreach (GameObject libraryObject in (ToolUtil.Settings.CustomObjectLibraries ?? new GameObject[0]).Where(item => item != null))
             {
                 ClientObjectLibrary library = libraryObject.GetComponent<ClientObjectLibrary>();
@@ -57,6 +55,20 @@ public static class ModPackageBuildUtility
                     throw new Exception("Selected object library entry is missing a ClientObjectLibrary component.");
                 }
 
+                UpdateClientIdOnClientObjects(library);
+                libraries.Add(library);
+            }
+            AssetDatabase.SaveAssets();
+
+            List<ModPackageBundleManifest> sceneBundles = new List<ModPackageBundleManifest>();
+            foreach (SceneAsset sceneAsset in (ToolUtil.Settings.ModScenes ?? new SceneAsset[0]).Where(item => item != null))
+            {
+                sceneBundles.Add(BuildSceneBundle(sceneAsset, tempBuildPath, sceneOutputPath));
+            }
+
+            List<ModPackageBundleManifest> objectBundles = new List<ModPackageBundleManifest>();
+            foreach (ClientObjectLibrary library in libraries)
+            {
                 objectBundles.Add(BuildClientObjectLibrary(library, tempBuildPath, objectOutputPath));
             }
 

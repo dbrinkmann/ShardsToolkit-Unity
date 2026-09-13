@@ -80,12 +80,14 @@ Commons CC0 1.0 Public Domain Dedication
 (https://creativecommons.org/publicdomain/zero/1.0/). See the `LICENSE.txt`
 in that directory.
 
-## Steamworks.NET (optional, not vendored)
+## Steamworks.NET (package dependency, not vendored)
 
 Workshop upload uses Steamworks.NET
 (https://github.com/rlabrecque/Steamworks.NET), MIT-licensed by Riley
-Labrecque. The SDK is intentionally not committed; see the README for
-install instructions.
+Labrecque. It is referenced as a Unity package in `Packages/manifest.json`
+and fetched by the Package Manager, so no Steamworks.NET source or native
+binary is stored in this repository. The package bundles Valve's Steamworks
+SDK redistributables, which remain subject to Valve's own terms.
 
 ## ShardsXML.dll
 

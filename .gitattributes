@@ -19,44 +19,46 @@
 *.yml text
 *.cpp text
 
-# --- Text: Unity YAML assets (optional: unityyamlmerge in ~/.gitconfig) ---
-*.meta text
-*.prefab text
-*.asset text
-*.mat text
-*.anim text
-*.controller text
-*.overrideController text
-*.physicMaterial text
-*.physicsMaterial2D text
-*.playable text
-*.preset text
-*.mask text
-*.brush text
-*.spriteatlas text
-*.terrainlayer text
-*.mixer text
-*.signal text
-*.shadersubgraph text
-*.shadergraph text
-*.vfx text
-*.inputactions text
-*.uxml text
-*.uss text
-*.lighting text
-*.cubemap text
-*.flare text
-*.rendertexture text
-*.guiskin text
-*.asmdef text
-*.js text
-*.html text
-*.plist text
-*.ini text
-*.csv text
-*.fnt text
-*.rtf text
-*.info text
+# --- Unity YAML assets: text=auto, NOT plain 'text'. These types can be
+# force-binary-serialized, and unconditional 'text' corrupts those on checkout
+# via CRLF conversion. text=auto lets git detect binary content and leave it alone.
+*.meta text=auto
+*.prefab text=auto
+*.asset text=auto
+*.mat text=auto
+*.anim text=auto
+*.controller text=auto
+*.overrideController text=auto
+*.physicMaterial text=auto
+*.physicsMaterial2D text=auto
+*.playable text=auto
+*.preset text=auto
+*.mask text=auto
+*.brush text=auto
+*.spriteatlas text=auto
+*.terrainlayer text=auto
+*.mixer text=auto
+*.signal text=auto
+*.shadersubgraph text=auto
+*.shadergraph text=auto
+*.vfx text=auto
+*.inputactions text=auto
+*.uxml text=auto
+*.uss text=auto
+*.lighting text=auto
+*.cubemap text=auto
+*.flare text=auto
+*.rendertexture text=auto
+*.guiskin text=auto
+*.asmdef text=auto
+*.js text=auto
+*.html text=auto
+*.plist text=auto
+*.ini text=auto
+*.csv text=auto
+*.fnt text=auto
+*.rtf text=auto
+*.info text=auto
 
 # --- Git LFS: 3D / DCC ---
 *.fbx filter=lfs diff=lfs merge=lfs -text
