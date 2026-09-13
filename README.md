@@ -191,6 +191,12 @@ fails with "contains a prefab without a ClientObject component at index N" if on
 does not. The wizard adds it for you, which is the main reason to use it rather
 than dragging prefabs into the library inspector by hand.
 
+Collision is exported from box colliders on child objects named exactly
+`Collider`. A collider anywhere else, including on the prefab root, is ignored
+at build time and the object will have no collision in game, with no warning.
+The wizard's `Add Box Collider` option creates that child for you. Two other
+child names are recognised the same way: `ObjectBounds` and `RoofBounds`.
+
 Slot 0 of a library is reserved as the invalid client id and is always left
 empty. Objects start at index 1.
 

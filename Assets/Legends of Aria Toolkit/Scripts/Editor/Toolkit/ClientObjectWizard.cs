@@ -45,7 +45,7 @@ public class ClientObjectWizard : EditorWindow
             new GUIContent("Category", "Used by the client to group objects."), category);
 
         addCollider = EditorGUILayout.Toggle(
-            new GUIContent("Add Box Collider", "Adds a box collider fitted to the renderers if the source has no collider."),
+            new GUIContent("Add Box Collider", "Adds a child object named \"Collider\" with a box collider fitted to the renderers. Collision is only exported from colliders on children named \"Collider\"."),
             addCollider);
 
         EditorGUILayout.Space();
@@ -132,7 +132,7 @@ public class ClientObjectWizard : EditorWindow
         }
         clientObject.Category = category;
 
-        if (addCollider && instance.GetComponentInChildren<Collider>() == null)
+        if (addCollider && instance.transform.Find(c_ColliderChildName) == null)
         {
             AddFittedBoxCollider(instance);
         }
@@ -213,13 +213,21 @@ public class ClientObjectWizard : EditorWindow
         }
     }
 
+    // Collision is exported from BoxColliders on child objects named "Collider" -- see
+    // CalculateCollisionBounds in ModPackageBuildUtility, which filters on that name. A collider
+    // placed anywhere else, including on the root, is silently ignored at build time and the
+    // object ends up with no collision in game.
     private static void AddFittedBoxCollider(GameObject instance)
     {
+        GameObject colliderObject = new GameObject(c_ColliderChildName);
+        colliderObject.transform.SetParent(instance.transform, false);
+
+        BoxCollider collider = colliderObject.AddComponent<BoxCollider>();
+
         Renderer[] renderers = instance.GetComponentsInChildren<Renderer>();
         if (renderers.Length == 0)
         {
-            // Nothing to fit to, so give an empty object a unit box to start from.
-            instance.AddComponent<BoxCollider>();
+            // Nothing to fit to, so leave an empty object with a unit box to resize by hand.
             return;
         }
 
@@ -229,7 +237,6 @@ public class ClientObjectWizard : EditorWindow
             bounds.Encapsulate(renderers[i].bounds);
         }
 
-        BoxCollider collider = instance.AddComponent<BoxCollider>();
         collider.center = instance.transform.InverseTransformPoint(bounds.center);
         collider.size = bounds.size;
     }
@@ -249,6 +256,8 @@ public class ClientObjectWizard : EditorWindow
 
         return string.IsNullOrEmpty(selectionPath) ? "Assets" : selectionPath;
     }
+
+    private const string c_ColliderChildName = "Collider";
 
     private GameObject sourceObject;
     private GameObject targetLibrary;
