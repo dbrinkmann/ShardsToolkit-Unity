@@ -303,26 +303,68 @@ Use that ID as the server-side `PackageId`.
 
 ## Iterating On A Mod
 
-Going through Steam Workshop on every change is slow and, worse, it fails
-quietly: the client happily loads an old bundle with no error. Most of the time
-lost building a mod is spent not realising the client is still running a stale
-package, so it is worth knowing how to check.
+**Develop against local bundles. Publish to Steam Workshop only when the mod is
+ready.**
+
+Steam does not always deliver a Workshop update to the client right away, so
+after uploading you may still be running the previous version. Local bundles
+avoid this: the client fetches them straight from your machine, so each rebuild
+is picked up.
+
+### Local bundles (while developing)
+
+Serve your built package folder over HTTP from the package root:
+
+```sh
+cd <your package output folder>
+python -m http.server 8000
+```
+
+Then point the server config at the bundles directly, instead of at a Workshop
+package:
+
+```xml
+<Mod Name="my-mod">
+  <ClientBundle Type="Scene" Name="TestDungeon">http://localhost:8000/Bundles/Scenes/TestDungeon</ClientBundle>
+  <ClientBundle Type="ClientObjects" Name="TestObjectLibrary">http://localhost:8000/Bundles/Objects/TestObjectLibrary</ClientBundle>
+</Mod>
+```
+
+The URLs point at the bundle files themselves, with no `.version` suffix. The
+client appends that itself: it fetches `<url>.version`, reads the integer inside,
+and uses it to decide whether its cached copy is stale. The toolkit writes those
+sidecar files next to each bundle on every build, and the number increments each
+time, so a rebuild is all it takes for the client to pick up the change.
+
+The loop is: build the mod package, relaunch the client. No upload, no Steam.
+
+If a bundle fails to load, the player log names which half failed --
+`[VersionFile]` means the sidecar could not be fetched (usually a wrong URL or
+the HTTP server is not running), `[BundleFile]` means the bundle itself did not
+download.
 
 ### Steam Workshop behaviour
 
-Workshop is the right choice for release, but know how it behaves:
+Workshop is the right choice for release. Update propagation is the part worth
+understanding before you publish:
 
 - **Subscribe to your own item.** Steam only tracks updates for items you are
   subscribed to. If you are not subscribed, the client downloads the package
   once and Steam then reports it as installed and up to date forever -- you will
   keep loading the first version you ever uploaded, with no error anywhere.
-- **Updates can lag.** Even when subscribed, Steam is often slow to flag an
-  update. Unsubscribing, waiting a few seconds, and resubscribing is the usual
-  remedy. This is a long-standing Steam issue, not a toolkit one.
+- **Updates can lag even when subscribed.** Steam is often slow to flag that a
+  new revision exists, and the client cannot download an update Steam never
+  tells it about. Unsubscribing, waiting a few seconds, and resubscribing is the
+  usual remedy. This is a long-standing Steam problem reported across many
+  games, not a toolkit one, and Valve has said they cannot reproduce it.
 - **To force a re-download**, delete the item's folder under
   `steamapps/workshop/content/<appid>/<publishedfileid>` and restart the client.
   With the folder gone the client treats the item as not installed and fetches
-  it again.
+  it again. The folder is pure cache -- Steam re-downloads it.
+- **A successful upload does not update your local copy.** Uploading pushes your
+  package to Steam's servers. The folder above is where your *subscribed* copy is
+  downloaded to, and Steam refreshes it separately. Seeing "Successfully uploaded"
+  in the Unity console tells you nothing about what your client will load.
 
 ### Checking which version the client actually loaded
 
@@ -412,9 +454,19 @@ For Steam Workshop packages, the client downloads each mod package separately an
    - `mod-manifest.json`
    - server-side XML under `ModsPath`
 
-7. Upload to Steam Workshop.
-8. Put the returned `PackageId` into the server config as a
-   `Source="SteamWorkshop"` mod entry.
-9. Subscribe to your own Workshop item, or the client will keep loading the
-   first version you uploaded. See [Iterating On A Mod](#iterating-on-a-mod),
-   which also covers how to confirm which package the client actually loaded.
+Then build it out against local bundles, not Workshop:
+
+7. Serve the package folder over HTTP and point the server config at it with
+   `ClientBundle` entries. See [Iterating On A Mod](#iterating-on-a-mod).
+8. Rebuild and relaunch to see each change. No upload, no Steam.
+
+Only once the mod is ready:
+
+9. Upload to Steam Workshop.
+10. Put the returned `PackageId` into the server config as a
+    `Source="SteamWorkshop"` mod entry, and remove the `ClientBundle` entries.
+11. Subscribe to your own Workshop item, or the client will keep loading the
+    first version you uploaded.
+12. Confirm the client actually picked up the package before assuming it
+    published correctly -- see
+    [Checking which version the client actually loaded](#checking-which-version-the-client-actually-loaded).

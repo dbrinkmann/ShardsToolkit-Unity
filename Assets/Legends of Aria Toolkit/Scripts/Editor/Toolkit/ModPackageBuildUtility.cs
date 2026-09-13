@@ -213,7 +213,7 @@ public static class ModPackageBuildUtility
         }
 
         BuildAssetBundle(tempBuildPath, build);
-        CopyBuiltBundle(tempBuildPath, scene.name, outputPath);
+        CopyBuiltBundle(tempBuildPath, scene.name, outputPath, bundleVersion);
 
         return new ModPackageBundleManifest()
         {
@@ -245,7 +245,7 @@ public static class ModPackageBuildUtility
         build.assetNames = assets.ToArray();
 
         BuildAssetBundle(tempBuildPath, build);
-        CopyBuiltBundle(tempBuildPath, library.BundleName, outputPath);
+        CopyBuiltBundle(tempBuildPath, library.BundleName, outputPath, bundleVersion);
 
         return new ModPackageBundleManifest()
         {
@@ -261,7 +261,7 @@ public static class ModPackageBuildUtility
         BuildPipeline.BuildAssetBundles(outputPath, new[] { build }, BuildAssetBundleOptions.None, BuildTarget.StandaloneWindows);
     }
 
-    static void CopyBuiltBundle(string tempBuildPath, string bundleName, string outputPath)
+    static void CopyBuiltBundle(string tempBuildPath, string bundleName, string outputPath, int bundleVersion)
     {
         string sourceBundlePath = Path.Combine(tempBuildPath, bundleName);
         if (!File.Exists(sourceBundlePath))
@@ -272,6 +272,12 @@ public static class ModPackageBuildUtility
         string targetBundlePath = Path.Combine(outputPath, bundleName);
         Directory.CreateDirectory(outputPath);
         File.Copy(sourceBundlePath, targetBundlePath, true);
+
+        // Web-hosted bundles need a '.version' sidecar: the client fetches it, parses it as an
+        // int, and passes that to WWW.LoadFromCacheOrDownload as the cache key. Without the file
+        // the client reports a load error, and without the number changing it keeps serving its
+        // cached copy. Steam Workshop packages ignore this file.
+        File.WriteAllText(targetBundlePath + ".version", bundleVersion.ToString());
     }
 
     static void WriteManifest(string packageRootPath, List<ModPackageBundleManifest> sceneBundles, List<ModPackageBundleManifest> objectBundles)
