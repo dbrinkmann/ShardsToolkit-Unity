@@ -1,12 +1,15 @@
-﻿using System.Linq;
+﻿using System;
+using System.IO;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
 public class ModPackageBuildWindow : EditorWindow
 {
     SerializedObject settingsObject;
-    string lastBuildPath;
-    bool lastBuildSucceeded;
+    [SerializeField] string lastBuildPath;
+    [SerializeField] bool lastBuildSucceeded;
+    [SerializeField] ModPackageManifest lastBuildManifest;
     bool uploadInProgress;
 
     string basePath;
@@ -150,20 +153,68 @@ public class ModPackageBuildWindow : EditorWindow
         {
             string packageRootPath;
             string errorMessage;
-            if (ModPackageBuildUtility.BuildCurrentModPackage(out packageRootPath, out errorMessage))
+            ModPackageManifest manifest;
+            if (ModPackageBuildUtility.BuildCurrentModPackage(out packageRootPath, out manifest, out errorMessage))
             {
                 lastBuildPath = packageRootPath;
                 lastBuildSucceeded = true;
-                EditorUtility.DisplayDialog("Build Complete", "Built mod package successfully.\n\nOutput: " + packageRootPath, "OK");
+                lastBuildManifest = manifest;
+                EditorUtility.DisplayDialog("Build Complete", "Built mod package successfully.\n\nOutput: " + packageRootPath
+                    + "\n\nCopy the generated bundle URLs from the Launcher Bundle URLs section below.", "OK");
             }
             else
             {
                 lastBuildPath = null;
                 lastBuildSucceeded = false;
+                lastBuildManifest = null;
                 EditorUtility.DisplayDialog("Build Failed", errorMessage, "OK");
             }
         }
         EditorGUI.EndDisabledGroup();
+
+        DrawLauncherBundleUrls();
+    }
+
+    void DrawLauncherBundleUrls()
+    {
+        if (!lastBuildSucceeded || lastBuildManifest == null)
+        {
+            return;
+        }
+
+        EditorGUILayout.Space();
+        EditorGUILayout.LabelField("Launcher Bundle URLs", EditorStyles.boldLabel);
+        EditorGUILayout.LabelField("Last Built Mod", lastBuildManifest.ModName);
+        EditorGUILayout.HelpBox("In the launcher, use the Web source and paste each URL into the matching bundle's Path / Value field.", MessageType.Info);
+
+        DrawBundleUrls(lastBuildManifest.SceneBundles, "Scene");
+        DrawBundleUrls(lastBuildManifest.ClientObjectBundles, "ClientObjects");
+    }
+
+    void DrawBundleUrls(ModPackageBundleManifest[] bundles, string bundleType)
+    {
+        if (bundles == null)
+        {
+            return;
+        }
+
+        foreach (ModPackageBundleManifest bundle in bundles)
+        {
+            string fileUrl = GetBundleFileUrl(lastBuildPath, bundle.RelativePath);
+            EditorGUILayout.LabelField(bundleType + ": " + bundle.Name);
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.SelectableLabel(fileUrl, EditorStyles.textField, GUILayout.Height(EditorGUIUtility.singleLineHeight));
+            if (GUILayout.Button("Copy", GUILayout.Width(60)))
+            {
+                EditorGUIUtility.systemCopyBuffer = fileUrl;
+            }
+            EditorGUILayout.EndHorizontal();
+        }
+    }
+
+    internal static string GetBundleFileUrl(string packageRootPath, string relativePath)
+    {
+        return new Uri(Path.GetFullPath(Path.Combine(packageRootPath, relativePath))).AbsoluteUri;
     }
 
     void DrawWorkshopSection()
