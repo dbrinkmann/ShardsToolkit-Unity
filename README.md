@@ -240,6 +240,8 @@ In the Build Mod Package window:
 4. Optionally set `WorkshopPackageOutputPath`.
 5. Click `Build Mod Package`.
 
+After a successful build, **Launcher Bundle URLs** lists each generated scene and client object bundle with a selectable `file:///` URL and a **Copy** button. In the launcher, use the **Web** source, match the bundle's **Type** (`Scene` or `ClientObjects`) and **Name**, then paste its URL into **Path / Value**. These URLs refer to files on the local machine; keep each generated `.version` file beside its bundle.
+
 If `WorkshopPackageOutputPath` is blank, the default output is:
 
 ```text

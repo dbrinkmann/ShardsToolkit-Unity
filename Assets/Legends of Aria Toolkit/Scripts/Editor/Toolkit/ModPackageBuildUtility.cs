@@ -16,6 +16,13 @@ public static class ModPackageBuildUtility
 {
     public static bool BuildCurrentModPackage(out string packageRootPath, out string errorMessage)
     {
+        ModPackageManifest manifest;
+        return BuildCurrentModPackage(out packageRootPath, out manifest, out errorMessage);
+    }
+
+    public static bool BuildCurrentModPackage(out string packageRootPath, out ModPackageManifest manifest, out string errorMessage)
+    {
+        manifest = null;
         packageRootPath = GetPackageRootPath();
         errorMessage = ValidateBuildSettings();
         if (!string.IsNullOrEmpty(errorMessage))
@@ -72,12 +79,13 @@ public static class ModPackageBuildUtility
                 objectBundles.Add(BuildClientObjectLibrary(library, tempBuildPath, objectOutputPath));
             }
 
-            WriteManifest(packageRootPath, sceneBundles, objectBundles);
+            manifest = WriteManifest(packageRootPath, sceneBundles, objectBundles);
             AssetDatabase.Refresh();
             return true;
         }
         catch (Exception ex)
         {
+            manifest = null;
             errorMessage = ex.Message;
             return false;
         }
@@ -280,7 +288,7 @@ public static class ModPackageBuildUtility
         File.WriteAllText(targetBundlePath + ".version", bundleVersion.ToString());
     }
 
-    static void WriteManifest(string packageRootPath, List<ModPackageBundleManifest> sceneBundles, List<ModPackageBundleManifest> objectBundles)
+    static ModPackageManifest WriteManifest(string packageRootPath, List<ModPackageBundleManifest> sceneBundles, List<ModPackageBundleManifest> objectBundles)
     {
         ModPackageManifest manifest = new ModPackageManifest()
         {
@@ -293,6 +301,7 @@ public static class ModPackageBuildUtility
 
         string manifestPath = Path.Combine(packageRootPath, "mod-manifest.json");
         File.WriteAllText(manifestPath, JsonUtility.ToJson(manifest, true));
+        return manifest;
     }
 
     static void SaveMapExtents(MapData mapData)
