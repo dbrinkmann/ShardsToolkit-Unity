@@ -10,7 +10,7 @@ The toolkit builds a single Workshop package per mod. That package contains the 
 
 ## Requirements
 
-- Unity 2020.3.49f1 (LTS) — see `ProjectSettings/ProjectVersion.txt`.
+- Unity 2022.3.62f3 (LTS), matching the Shards game client — see `ProjectSettings/ProjectVersion.txt`.
 - [Git LFS](https://git-lfs.com/). A handful of binary assets in this
   repository (a couple of editor textures, the `ShardsXML.dll`, the
   collision-paint terrain template) are tracked via LFS. Install Git LFS
