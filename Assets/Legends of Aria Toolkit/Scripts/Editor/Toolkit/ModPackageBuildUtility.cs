@@ -272,10 +272,24 @@ public static class ModPackageBuildUtility
     static void CopyBuiltBundle(string tempBuildPath, string bundleName, string outputPath, int bundleVersion)
     {
         string sourceBundlePath = Path.Combine(tempBuildPath, bundleName);
-        if (!File.Exists(sourceBundlePath))
-        {
-            throw new Exception("Expected built asset bundle was not found: " + sourceBundlePath);
-        }
+
+    	// Unity normalizes AssetBundle filenames to lowercase.
+	// Linux filesystems are case sensitive.
+	if (!File.Exists(sourceBundlePath))
+       {
+       		string lowercaseSourceBundlePath =
+			Path.Combine(tempBuildPath, bundleName.ToLowerInvariant());
+	
+		if (File.Exists(lowercaseSourceBundlePath))
+		{
+			sourceBundlePath = lowercaseSourceBundlePath;
+		}
+		else
+		{
+        	    throw new Exception(
+			"Expected built asset bundle was not found: " + sourceBundlePath);
+	        }
+	}
 
         string targetBundlePath = Path.Combine(outputPath, bundleName);
         Directory.CreateDirectory(outputPath);
