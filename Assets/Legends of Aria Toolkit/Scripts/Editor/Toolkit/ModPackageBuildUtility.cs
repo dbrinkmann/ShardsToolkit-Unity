@@ -30,6 +30,13 @@ public static class ModPackageBuildUtility
             return false;
         }
 
+        // before anything is written, so a failed check leaves the previous package in place
+        errorMessage = ValidateCreatures();
+        if (!string.IsNullOrEmpty(errorMessage))
+        {
+            return false;
+        }
+
         string tempBuildPath = GetTempBuildPath();
         SceneSetup[] originalScenes = EditorSceneManager.GetSceneManagerSetup();
 
@@ -168,6 +175,40 @@ public static class ModPackageBuildUtility
         }
 
         return null;
+    }
+
+    // Runs CreatureValidator on every library. Warnings go to the console; errors fail the build.
+    static string ValidateCreatures()
+    {
+        List<CreatureValidator.Issue> errors = new List<CreatureValidator.Issue>();
+        foreach (GameObject libraryObject in (ToolUtil.Settings.CustomObjectLibraries ?? new GameObject[0]).Where(item => item != null))
+        {
+            foreach (CreatureValidator.Issue issue in CreatureValidator.ValidateLibrary(libraryObject.GetComponent<ClientObjectLibrary>()))
+            {
+                if (issue.Severity == CreatureValidator.Severity.Error)
+                {
+                    errors.Add(issue);
+                }
+                else
+                {
+                    Debug.LogWarning("[Creature check] " + issue, issue.Prefab);
+                }
+            }
+        }
+
+        if (errors.Count == 0)
+        {
+            return null;
+        }
+
+        const int maxListed = 8;
+        string message = "Creature prefabs have errors that would break them in game:\n\n"
+                       + string.Join("\n\n", errors.Take(maxListed).Select(item => item.ToString()));
+        if (errors.Count > maxListed)
+        {
+            message += "\n\n... and " + (errors.Count - maxListed) + " more.";
+        }
+        return message + "\n\nOpen LoA Toolkit/Validate Creatures for the full list.";
     }
 
     static ModPackageBundleManifest BuildSceneBundle(SceneAsset sceneAsset, string tempBuildPath, string outputPath)
@@ -400,7 +441,14 @@ public static class ModPackageBuildUtility
                 continue;
             }
 
-            ClientObject newObject = (UnityEngine.Object.Instantiate(objectPrefab, Vector3.zero, new Quaternion()) as GameObject).GetComponent<ClientObject>();
+            // Creatures collide through the template's BodyOffset, not static collision. Exporting
+            // a stray "Collider" child here would give the creature's ClientId static collision.
+            if (objectPrefab.GetComponent<Mobile>() != null)
+            {
+                continue;
+            }
+
+            ClientObject newObject =(UnityEngine.Object.Instantiate(objectPrefab, Vector3.zero, new Quaternion()) as GameObject).GetComponent<ClientObject>();
             List<Rect3> allCollisionBounds = CalculateCollisionBounds(newObject);
 
             List<Transform> allObjectBoundsTrans = new List<Transform>();
