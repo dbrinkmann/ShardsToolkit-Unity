@@ -127,7 +127,7 @@ public class CreatureWizard : EditorWindow
         }
         else
         {
-            EditorGUILayout.HelpBox("FMODAudioReference.txt was not found in the base game folder, so no sound sets can be listed.", MessageType.None);
+            EditorGUILayout.HelpBox("No sound sets found: FMODAudioReference.txt is not in the base game folder, and the library below has no Sounds folder with _attack and _death sounds.", MessageType.None);
         }
 
         EditorGUILayout.Space();
@@ -139,7 +139,12 @@ public class CreatureWizard : EditorWindow
         }
 
         EditorGUILayout.Space();
-        targetLibrary = (GameObject)EditorGUILayout.ObjectField(new GUIContent("Add To Library", "Optional. The client object library to register the creature in."), targetLibrary, typeof(GameObject), false);
+        GameObject pickedLibrary = (GameObject)EditorGUILayout.ObjectField(new GUIContent("Add To Library", "Optional. The client object library to register the creature in. Its Sounds folder adds mod sound sets to the list above."), targetLibrary, typeof(GameObject), false);
+        if (pickedLibrary != targetLibrary)
+        {
+            targetLibrary = pickedLibrary;
+            LoadSoundPrefixes();
+        }
 
         EditorGUILayout.Space();
         string problem = GetInputProblem();
@@ -238,19 +243,36 @@ public class CreatureWizard : EditorWindow
         return new Vector2(speed.x, speed.z).magnitude;
     }
 
+    // Sound sets: prefixes with both _attack and _death sounds, from the target library's Sounds
+    // folder (mod:/...) first, then from the game's FMOD events.
     void LoadSoundPrefixes()
     {
-        HashSet<string> events = CreatureValidator.LoadFmodEventList();
+        string previous = soundIndex > 0 && soundIndex < soundPrefixes.Length ? soundPrefixes[soundIndex] : null;
+        HashSet<string> sounds = AvailableSounds();
         List<string> prefixes = new List<string>() { "(none)" };
-        if (events != null)
-        {
-            prefixes.AddRange(events.Where(item => item.EndsWith("_attack"))
-                .Select(item => item.Substring(0, item.Length - "_attack".Length))
-                .Where(prefix => events.Contains(prefix + "_death"))
-                .OrderBy(item => item));
-        }
+        prefixes.AddRange(sounds.Where(item => item.EndsWith("_attack"))
+            .Select(item => item.Substring(0, item.Length - "_attack".Length))
+            .Where(prefix => sounds.Contains(prefix + "_death"))
+            .OrderBy(item => item.StartsWith("mod:/") ? 0 : 1)
+            .ThenBy(item => item));
         soundPrefixes = prefixes.ToArray();
-        soundIndex = Mathf.Max(0, Array.FindIndex(soundPrefixes, item => item.EndsWith("/wolf/wolf")));
+
+        soundIndex = previous != null ? Array.IndexOf(soundPrefixes, previous) : -1;
+        if (soundIndex < 0)
+        {
+            soundIndex = Mathf.Max(0, Array.FindIndex(soundPrefixes, item => item.StartsWith("mod:/") || item.EndsWith("/wolf/wolf")));
+        }
+    }
+
+    HashSet<string> AvailableSounds()
+    {
+        HashSet<string> sounds = CreatureValidator.LoadFmodEventList() ?? new HashSet<string>();
+        ClientObjectLibrary library = targetLibrary != null ? targetLibrary.GetComponent<ClientObjectLibrary>() : null;
+        if (library != null)
+        {
+            sounds.UnionWith(CustomSoundBuilder.GetSoundPaths(library));
+        }
+        return sounds;
     }
 
     static string[] GetBonePaths(Transform root)
@@ -270,8 +292,8 @@ public class CreatureWizard : EditorWindow
     void CreateCreature()
     {
         settings.SoundPrefix = soundIndex > 0 && soundIndex < soundPrefixes.Length ? soundPrefixes[soundIndex] : "";
-        HashSet<string> events = CreatureValidator.LoadFmodEventList();
-        settings.AmbientSound = !string.IsNullOrEmpty(settings.SoundPrefix) && events != null && events.Contains(settings.SoundPrefix + "_environment")
+        HashSet<string> sounds = AvailableSounds();
+        settings.AmbientSound = !string.IsNullOrEmpty(settings.SoundPrefix) && sounds.Contains(settings.SoundPrefix + "_environment")
             ? settings.SoundPrefix + "_environment" : "";
         settings.MountBonePath = settings.IsMount && bonePaths.Length > 0 ? bonePaths[mountBoneIndex] : "";
 
@@ -312,7 +334,10 @@ public class CreatureWizard : EditorWindow
         Selection.activeObject = prefab;
         EditorGUIUtility.PingObject(prefab);
 
-        List<CreatureValidator.Issue> issues = prefab != null ? CreatureValidator.ValidatePrefab(prefab, slot) : new List<CreatureValidator.Issue>();
+        ClientObjectLibrary chosenLibrary = targetLibrary != null ? targetLibrary.GetComponent<ClientObjectLibrary>() : null;
+        List<CreatureValidator.Issue> issues = prefab != null
+            ? CreatureValidator.ValidatePrefab(prefab, slot, null, chosenLibrary != null ? CustomSoundBuilder.GetSoundPaths(chosenLibrary) : null)
+            : new List<CreatureValidator.Issue>();
         string result = "Created " + prefabPath + (slot > 0 ? "\nAdded to \"" + targetLibrary.name + "\" at ClientId " + slot + "." : "") + "\n\n"
             + "Footsteps: add WalkCycle / RunCycle curves to the walk and run clips (see the docs). "
             + (settings.IsMount ? "Ride it and move \"MountPoint\" to fine-tune the seat. " : "")
