@@ -204,6 +204,14 @@ You do not assign client ids yourself. Building the package sets each prefab's
 `ClientId` from its position in the library and stamps `CustomObjectLibrary` with
 the library's `BundleName`.
 
+### Creatures and mounts
+
+Creatures (mobs) and mounts are client objects with a `Mobile` component and an animator
+the game client drives. Use `LoA Toolkit -> Custom Assets -> Create Creature` to build one
+from a rigged model, and `Create Creature Templates` for its server templates. Custom sounds
+go in a `Sounds` folder next to the library. See
+[docs/creatures-and-mounts.md](docs/creatures-and-mounts.md).
+
 ### Building the library
 
 1. Create or select a `ClientObjectLibrary` prefab.
