@@ -39,6 +39,7 @@ public static class CreatureValidator
     public const int MaxClientIdForCurrentClient = 2879;
 
     const int PickerColliderLayer = 19;
+    const string CustomSoundPathPrefix = "mod:/";
     const int PickerCollider2Layer = 23;
 
     static readonly string[] RequiredStates = { "idle", "walk", "run", "die", "attack" };
@@ -66,12 +67,13 @@ public static class CreatureValidator
         }
 
         HashSet<string> fmodEvents = LoadFmodEventList();
+        HashSet<string> modSounds = CustomSoundBuilder.GetSoundPaths(library);
         for (int i = 1; i < library.ClientIdPrefabs.Length; i++)
         {
             GameObject prefab = library.ClientIdPrefabs[i];
             if (prefab != null)
             {
-                issues.AddRange(ValidatePrefab(prefab, i, fmodEvents));
+                issues.AddRange(ValidatePrefab(prefab, i, fmodEvents, modSounds));
             }
         }
 
@@ -79,7 +81,8 @@ public static class CreatureValidator
     }
 
     // clientId 0 means "not in a library yet" and skips the ClientId check.
-    public static List<Issue> ValidatePrefab(GameObject prefab, int clientId, HashSet<string> fmodEvents = null)
+    // modSounds: "mod:/<bundle>/<name>" paths of the library's own sounds, or null if unknown.
+    public static List<Issue> ValidatePrefab(GameObject prefab, int clientId, HashSet<string> fmodEvents = null, HashSet<string> modSounds = null)
     {
         List<Issue> issues = new List<Issue>();
         Action<Severity, string> add = (severity, message) =>
@@ -147,7 +150,7 @@ public static class CreatureValidator
         }
 
         CheckMaterials(prefab, add);
-        CheckSounds(prefab, mobile, fmodEvents ?? LoadFmodEventList(), add);
+        CheckSounds(prefab, mobile, fmodEvents ?? LoadFmodEventList(), modSounds, add);
 
         return issues;
     }
@@ -433,41 +436,57 @@ public static class CreatureValidator
         }
     }
 
-    static void CheckSounds(GameObject prefab, Mobile mobile, HashSet<string> fmodEvents, Action<Severity, string> add)
+    static void CheckSounds(GameObject prefab, Mobile mobile, HashSet<string> fmodEvents, HashSet<string> modSounds, Action<Severity, string> add)
     {
-        if (fmodEvents == null)
+        if (fmodEvents == null && modSounds == null)
         {
             return;
         }
 
         if (string.IsNullOrEmpty(mobile.FMODAudioPath))
         {
-            add(Severity.Warning, "Mobile.FMODAudioPath is empty, so the creature makes no attack, pain, death or footstep sounds. Pick a sound set from the game, for example event:/animals/wolf/wolf.");
+            add(Severity.Warning, "Mobile.FMODAudioPath is empty, so the creature makes no attack, pain, death or footstep sounds. Pick a sound set from the game (for example event:/animals/wolf/wolf) or from the library's Sounds folder (mod:/<bundle>/<name>).");
         }
-        else if (mobile.FMODAudioPath.StartsWith("event:/"))
+        else
         {
             string[] missing = SoundSuffixes
                 .Where(suffix => !(suffix == "_footsteps" && !string.IsNullOrEmpty(mobile.OptionalFMODFootstepPath)))
-                .Where(suffix => !fmodEvents.Contains(mobile.FMODAudioPath + suffix))
+                .Where(suffix => IsKnownSound(mobile.FMODAudioPath + suffix, fmodEvents, modSounds) == false)
                 .ToArray();
             if (missing.Length > 0)
             {
-                add(Severity.Warning, "These sounds do not exist in the game: " + string.Join(", ", missing.Select(suffix => mobile.FMODAudioPath + suffix)) + ". Those events stay silent.");
+                add(Severity.Warning, (IsModSound(mobile.FMODAudioPath) ? "These sounds are not in the library's Sounds folder: " : "These sounds do not exist in the game: ")
+                    + string.Join(", ", missing.Select(suffix => mobile.FMODAudioPath + suffix)) + ". Those events stay silent.");
             }
         }
 
-        if (!string.IsNullOrEmpty(mobile.OptionalFMODFootstepPath) && !fmodEvents.Contains(mobile.OptionalFMODFootstepPath))
+        if (!string.IsNullOrEmpty(mobile.OptionalFMODFootstepPath) && IsKnownSound(mobile.OptionalFMODFootstepPath, fmodEvents, modSounds) == false)
         {
-            add(Severity.Warning, "OptionalFMODFootstepPath \"" + mobile.OptionalFMODFootstepPath + "\" does not exist in the game.");
+            add(Severity.Warning, "OptionalFMODFootstepPath \"" + mobile.OptionalFMODFootstepPath + "\" does not exist.");
         }
 
         foreach (FMODPlayEnvironmentSound ambient in prefab.GetComponentsInChildren<FMODPlayEnvironmentSound>(true))
         {
-            if (!string.IsNullOrEmpty(ambient.FMODPath) && !fmodEvents.Contains(ambient.FMODPath))
+            if (!string.IsNullOrEmpty(ambient.FMODPath) && IsKnownSound(ambient.FMODPath, fmodEvents, modSounds) == false)
             {
-                add(Severity.Warning, "FMODPlayEnvironmentSound path \"" + ambient.FMODPath + "\" does not exist in the game.");
+                add(Severity.Warning, "FMODPlayEnvironmentSound path \"" + ambient.FMODPath + "\" does not exist.");
             }
         }
+    }
+
+    static bool IsModSound(string path)
+    {
+        return path.StartsWith(CustomSoundPathPrefix, StringComparison.Ordinal);
+    }
+
+    // true/false when the path can be checked, null when the matching list is not available
+    static bool? IsKnownSound(string path, HashSet<string> fmodEvents, HashSet<string> modSounds)
+    {
+        if (IsModSound(path))
+        {
+            return modSounds != null ? modSounds.Contains(path) : (bool?)null;
+        }
+        return fmodEvents != null ? fmodEvents.Contains(path) : (bool?)null;
     }
 
     // Reads the game's list of FMOD events (FMODAudioReference.txt in the base game folder).

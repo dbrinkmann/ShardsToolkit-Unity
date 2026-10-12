@@ -285,6 +285,8 @@ public static class ModPackageBuildUtility
         UpdateClientIdOnClientObjects(library);
         GenerateObjectCollisionData(library);
         CreateObjectTagDefinitionsFile(library);
+        CreatureTagGenerator.UpdateTags(library, Path.Combine(GetServerBundlePath(library.BundleName), "ObjectTagDefinitions.xml"));
+        CustomSoundBuilder.UpdateSoundLibrary(library);
 
         HashSet<string> assets = new HashSet<string>(AssetDatabase.GetAssetPathsFromAssetBundle(library.BundleName));
         assets.Add(AssetDatabase.GetAssetPath(library));
