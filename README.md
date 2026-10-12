@@ -3,7 +3,9 @@
 This project is the Unity toolkit used to create:
 
 - custom maps
-- custom client object libraries
+- custom client object libraries, including:
+  - creatures (mobs) and rideable mounts, with their own sounds
+  - wearables for player characters: pants, shirts, hats, cloaks
 - Steam Workshop mod packages
 
 The toolkit builds a single Workshop package per mod. That package contains the client-facing assetbundles and a `mod-manifest.json` file. Server-side data such as map XML and object collision/tag XML remains separate and is written into the server mod folder.
@@ -204,13 +206,8 @@ You do not assign client ids yourself. Building the package sets each prefab's
 `ClientId` from its position in the library and stamps `CustomObjectLibrary` with
 the library's `BundleName`.
 
-### Creatures and mounts
-
-Creatures (mobs) and mounts are client objects with a `Mobile` component and an animator
-the game client drives. Use `LoA Toolkit -> Custom Assets -> Create Creature` to build one
-from a rigged model, and `Create Creature Templates` for its server templates. Custom sounds
-go in a `Sounds` folder next to the library. See
-[docs/creatures-and-mounts.md](docs/creatures-and-mounts.md).
+Creatures, mounts, sounds and wearables are client objects too. See
+[Creatures, Mounts, Sounds And Wearables](#creatures-mounts-sounds-and-wearables).
 
 ### Building the library
 
@@ -222,11 +219,15 @@ go in a `Sounds` folder next to the library. See
 
 The toolkit will:
 
+- check every creature and mount prefab, and stop on errors (see
+  [Checks and debugging](#checks-and-debugging))
 - increment the bundle version
 - update `ClientId` and `CustomObjectLibrary` on the prefabs
 - generate:
-  - `ObjectCollisionData.xml`
-  - `ObjectTagDefinitions.xml`
+  - `ObjectCollisionData.xml` (creatures are skipped; they collide through their template's `BodyOffset`)
+  - `ObjectTagDefinitions.xml`, keeping its `Mobile` and `Mount` tags in step with the library's
+    creatures and mounts (other tags you add are kept)
+- pack the library's `Sounds` folder into the bundle (see [Sounds](#sounds))
 - build the client object library bundle
 - add the object library entry to `mod-manifest.json`
 
@@ -237,6 +238,99 @@ Important:
   - in server-side XML paths
   - in permanent object `CustomAssetBundle`
   - in the package manifest
+
+## Creatures, Mounts, Sounds And Wearables
+
+The game client gives creatures, mounts and worn items their behaviour through its own
+components. A bundle cannot carry code, so the toolkit ships **placeholders** of those
+components under `Scripts/Client`: the client's classes with the code removed and the same
+serialized fields and script GUIDs. You add them to prefabs as usual; when the client loads
+the bundle it attaches its own class of the same name and fills in your values. Don't write
+your own copies of these classes, and don't rename their fields.
+
+| Placeholder | Used for |
+|---|---|
+| `Mobile` | Root of a creature or mount: makes it a mobile; sound prefix; walk/run animation speed |
+| `EquipmentObject` | Mounts (slot `Mount`, rider point) and wearables (slot, worn mesh per body) |
+| `FootstepHandler` | Next to a creature's Animator: footstep sounds |
+| `RandomAnimIndexBehaviour` | On a creature controller's `attack` state: picks a random attack variant |
+| `FMODPlayEnvironmentSound` | A creature's ambient sound loop |
+| `FMODAudioZone`, `LinkAudioZone` | Areas that play ambience or music while the player is inside |
+| `PlayerClothCollider` | On a mount: keeps the rider's cape out of the mount |
+| `BoneMap` | On each worn `SkinnedMeshRenderer`: binds it to the wearer's bones |
+| `MeshReplacement` | On a worn renderer: hides body parts under it |
+| `ManualBoneMap` | Rigid worn parts on a bone (rigid hats; later weapons and shields) |
+| `InventoryObject` | An item's pose in container windows |
+| `EquippableClothSimComponent`, `ClothConstraintTuning` | Cloth cloaks |
+| `EquipmentController` | Lets a creature wear skinned items |
+| `MeshVariation`, `MaterialVariation`, `ObjectMaterialVariation`, `ObjectTextureVariation` | Looks chosen by the server's `Variation` property |
+| `CustomSoundLibrary` | Filled by the build: the library's sounds |
+
+### Creatures and mounts
+
+- `LoA Toolkit -> Custom Assets -> Create Creature` builds a creature or mount prefab from a
+  rigged model and its animation clips:
+  - a controller laid out the way the client drives it;
+  - speed factors from your clip speeds;
+  - name plate and effect anchors and a picking volume;
+  - for a mount, the rider point.
+- `LoA Toolkit -> Custom Assets -> Create Creature Templates` writes the server templates:
+  - the creature, copied from a base game creature you pick for its AI, stats and loot;
+  - for a mount, the statue that summons it.
+- The build writes the bundle's `Mobile` and `Mount` tags for you.
+- Full guide: [docs/creatures-and-mounts.md](docs/creatures-and-mounts.md).
+
+### Sounds
+
+- **Game sounds:** a creature can use any sound set from the game, e.g. `event:/animals/wolf/wolf`.
+  The creature wizard lists them.
+- **Your own sounds:** put audio files (`.ogg` recommended) in a `Sounds` folder next to the
+  library prefab, named by the game's suffixes:
+  - `hound_attack.ogg`, `hound_pain.ogg`, `hound_death.ogg`
+  - `hound_footsteps.ogg`, `hound_environment.ogg`
+  - numbered files such as `hound_attack_2.ogg` are random variants
+- The build packs them into the bundle. Use them as `mod:/<BundleName>/hound` anywhere an FMOD
+  event path is accepted: a creature's sound prefix, footsteps, ambient loops, audio zones
+  (area music).
+- Per-sound volume, distance, looping and volume group are on the library's `CustomSoundLibrary`
+  component after a build; your changes there are kept.
+- See [Sounds in the creature guide](docs/creatures-and-mounts.md#sounds).
+
+### Wearables
+
+Pants, shirts, hats and cloaks for human player characters. They are:
+
+- **An item prefab in the library:** `ClientObject` plus `EquipmentObject` (`EquipmentSlot`
+  `Legs`, `Chest`, `Head` or `Cloak`), the model shown on the ground and in the backpack, and
+  `PickerBounds`.
+- **A worn mesh prefab per body**, referenced from `EquipmentObject.EquipmentMeshPrefabs`:
+  - keys are the wearer's ClientId: 1 = male, 208 = female, 269 = skeleton (a resurrected
+    player's corpse);
+  - the mesh is skinned to the body's skeleton, with a `BoneMap` on each renderer;
+  - a `MeshReplacement` hides the body part underneath it.
+- **An `EquipSlot` tag** in the bundle's `ObjectTagDefinitions.xml`, with the same slot name.
+
+Guide and recipes: [docs/wearables.md](docs/wearables.md); skeleton and bind-pose data:
+[docs/human-rig.md](docs/human-rig.md).
+
+### Checks and debugging
+
+- **Before building:** `LoA Toolkit -> Validate Creatures` checks creature and mount prefabs
+  against what the client expects, and Build Mod Package runs the same checks first:
+  - **errors** (things that break the creature in game) stop the build;
+  - **warnings** go to the Console.
+- **In game:** the client writes problems it finds with mod prefabs to `Player.log` as
+  `[Prefab check] ClientId N (bundle '…', …): …`.
+- **Staff tools:** players with staff access can press **F9** for an overlay showing the
+  targeted creature's:
+  - animator state, parameters and speed;
+  - last animation;
+  - sound paths.
+
+  Its **Reload mod bundles** button loads a rebuilt bundle without logging out.
+
+Mod sounds, ClientIds above 2879, the debug overlay and bundle reload need the October 2026
+client update or later.
 
 ## Building The Mod Package
 
@@ -457,13 +551,26 @@ For Steam Workshop packages, the client downloads each mod package separately an
   - toolkit `BundleName`
   - server-side permanent object references
   - manifest entries
+- **Wearables:**
+  - The build doesn't write their `EquipSlot` tags yet; add them to the bundle's
+    `ObjectTagDefinitions.xml` by hand.
+  - There is no wearable wizard or validator yet.
+  - `BoneMap.Bones` must be filled by hand, in the mesh's bone order.
+- **Item icons:** 2D item icons (container list view, hotbar) are looked up by ClientId
+  without the bundle, so a custom item N shows the base game's icon for item N.
+- **Reload mod bundles** skips worn items. Log out and back in after reloading if you are
+  testing wearables.
+- **The human body:** the base game's body meshes and rig are not distributed with this
+  toolkit. [docs/human-rig.md](docs/human-rig.md) has the skeleton and bind pose to author
+  against.
 
 ## Recommended Modder Workflow
 
 1. Create a mod.
 2. Set toolkit paths and current mod.
 3. Build one or more custom maps.
-4. Build one or more custom object libraries.
+4. Build one or more custom object libraries. For creatures and mounts use the creature
+   wizards, and run `Validate Creatures`.
 5. Click `Build Mod Package`.
 6. Verify:
    - package contents
