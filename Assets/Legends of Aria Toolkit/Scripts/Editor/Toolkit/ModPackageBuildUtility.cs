@@ -86,6 +86,16 @@ public static class ModPackageBuildUtility
                 objectBundles.Add(BuildClientObjectLibrary(library, tempBuildPath, objectOutputPath));
             }
 
+            // A scene's rendered world map (LoA Toolkit > Custom Assets > Render World Map) ships as
+            // a client object bundle of its own, so a mod needs no object library to carry it.
+            foreach (ModPackageBundleManifest sceneBundle in sceneBundles)
+            {
+                if (WorldMapRenderer.HasRenderedMap(sceneBundle.Name))
+                {
+                    objectBundles.Add(BuildWorldMapBundle(sceneBundle.Name, sceneBundle.BundleVersion, tempBuildPath, objectOutputPath));
+                }
+            }
+
             manifest = WriteManifest(packageRootPath, sceneBundles, objectBundles);
             AssetDatabase.Refresh();
             return true;
@@ -310,6 +320,40 @@ public static class ModPackageBuildUtility
         {
             Name = library.BundleName,
             RelativePath = NormalizeRelativePath(Path.Combine("Bundles", "Objects", library.BundleName)),
+            BundleVersion = bundleVersion
+        };
+    }
+
+    public static string WorldMapBundleName(string sceneName)
+    {
+        return sceneName + "_worldmap";
+    }
+
+    /// <summary>
+    /// Builds Assets/UI/Maps/Tiles/&lt;Scene&gt;/ (tiles, manifest, region data) into the
+    /// "&lt;Scene&gt;_worldmap" bundle. The game client looks for a world's map in every client
+    /// bundle by those asset paths. It takes the scene bundle's version, which goes up every build.
+    /// </summary>
+    internal static ModPackageBundleManifest BuildWorldMapBundle(string sceneName, int bundleVersion, string tempBuildPath, string outputPath)
+    {
+        string bundleName = WorldMapBundleName(sceneName);
+        AssetDatabase.Refresh();
+        string[] assets = Directory.GetFiles(WorldMapRenderer.OutputFolder(sceneName), "*", SearchOption.AllDirectories)
+            .Where(path => !path.EndsWith(".meta", StringComparison.OrdinalIgnoreCase))
+            .Select(path => path.Replace('\\', '/'))
+            .ToArray();
+
+        AssetBundleBuild build = new AssetBundleBuild();
+        build.assetBundleName = bundleName;
+        build.assetNames = assets;
+
+        BuildAssetBundle(tempBuildPath, build);
+        CopyBuiltBundle(tempBuildPath, bundleName, outputPath, bundleVersion);
+
+        return new ModPackageBundleManifest()
+        {
+            Name = bundleName,
+            RelativePath = NormalizeRelativePath(Path.Combine("Bundles", "Objects", bundleName)),
             BundleVersion = bundleVersion
         };
     }
