@@ -229,9 +229,15 @@ public static class ModPackageBuildUtility
         int bundleVersion = mapData.BundleVersion + 1;
         SetSerializedInt(mapData, "BundleVersion", bundleVersion);
 
-        EditorSceneManager.SaveOpenScenes();
         ClientTools.GenerateIds(true, true);
         SaveMapExtents(mapData);
+
+        // Save after GenerateIds, not before: the bundle is built from the scene file on disk, and
+        // GenerateIds is what gives each placed object the PermanentId the server's
+        // PermanentObjects.xml uses. Saved too early, newly placed objects ship with PermanentId 0
+        // and the client never adds their collision, while the server does, so players rubberband.
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveOpenScenes();
 
         List<string> scenesToLoad = new List<string>();
 #if WORLD_STREAMER_ENABLED
