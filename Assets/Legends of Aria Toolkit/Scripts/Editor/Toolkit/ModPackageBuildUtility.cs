@@ -236,6 +236,8 @@ public static class ModPackageBuildUtility
         // GenerateIds is what gives each placed object the PermanentId the server's
         // PermanentObjects.xml uses. Saved too early, newly placed objects ship with PermanentId 0
         // and the client never adds their collision, while the server does, so players rubberband.
+        // Changing scene objects through a SerializedObject doesn't mark the scene dirty, so without
+        // this SaveOpenScenes skips it and the BundleVersion bump is lost too.
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveOpenScenes();
 
