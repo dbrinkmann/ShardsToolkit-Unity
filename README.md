@@ -109,6 +109,18 @@ and the wizard builds a starting scene for you:
 Either way the wizard also creates the required `MapData` object and registers
 the tags and layers the engine expects, then saves the scene.
 
+**Fog:** the game turns Unity's fog on in every map, even when `Fog` is unticked in
+the Lighting window, and uses the scene's fog mode, colour, density and distances. The
+editor doesn't show it. The wizard sets new maps to the game's default (Exponential,
+density 0), which shows no fog.
+
+- **Fog on purpose:** set a small Exponential density (around 0.002) and your own colour
+  in `Window -> Rendering -> Lighting -> Environment`.
+- **Maps made earlier,** or from a scene of your own, may have Unity's default grey fog,
+  which covers the whole map in game. `LoA Toolkit -> Utils -> Remove Fog From Open Map`
+  fixes that.
+- **Build warning:** Build Mod Package warns about every map that will show fog.
+
 The camera prefab it drops in already has a post-processing profile attached,
 so a new map looks like the live game out of the box:
 
