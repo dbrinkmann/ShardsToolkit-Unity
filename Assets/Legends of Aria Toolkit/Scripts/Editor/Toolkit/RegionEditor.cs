@@ -498,9 +498,71 @@ public class RegionEditor : EditorWindow
         worldData.Items = worldData.Items.Concat(newRegions.Select(item => (object)item)).ToArray();
         ToolUtil.WriteXML(ser, filePath, worldData);
 
-        EditorUtility.DisplayDialog("CONFIRMATION", "Regions saved. (Filename: " + filePath + ")", "Okay");
+        string mapRegionPath = ExportMapRegionData(regionObjs);
+
+        EditorUtility.DisplayDialog("CONFIRMATION", "Regions saved. (Filename: " + filePath + ")\n\nArea names for the world map: " + mapRegionPath, "Okay");
 
         return true;
+    }
+
+    /// <summary>
+    /// Writes the regions for the game client's world map (area names, and the NoHousing region
+    /// shown when housing is toggled) next to the map's tiles, so Build Mod Package ships them in
+    /// the "&lt;Scene&gt;_worldmap" bundle. Same format as the client's own RegionData.xml: each
+    /// box as its world centre, half extents and rotation.
+    /// </summary>
+    private static string ExportMapRegionData(RegionVisualizer[] regionObjs)
+    {
+        string dir = WorldMapRenderer.OutputFolder(ToolUtil.currentScene);
+        string path = dir + "/RegionData.xml";
+        Directory.CreateDirectory(dir);
+
+        XmlWriterSettings settings = new XmlWriterSettings();
+        settings.Indent = true;
+        settings.IndentChars = "\t";
+        settings.Encoding = new System.Text.UTF8Encoding(false);
+
+        using (XmlWriter writer = XmlWriter.Create(path, settings))
+        {
+            writer.WriteStartDocument();
+            writer.WriteStartElement("RegionData");
+            foreach (RegionVisualizer regionObj in regionObjs)
+            {
+                writer.WriteStartElement("Region");
+                writer.WriteAttributeString("name", regionObj.name);
+                foreach (Transform nodeTrans in regionObj.transform)
+                {
+                    BoxCollider regionBox = nodeTrans.GetComponent<BoxCollider>();
+                    if (regionBox == null) continue;
+
+                    Vector3 worldCenter = regionBox.transform.TransformPoint(regionBox.center);
+                    Vector3 lossyScale = regionBox.transform.lossyScale;
+                    Vector3 halfExtents = new Vector3(
+                        regionBox.size.x * 0.5f * Mathf.Abs(lossyScale.x),
+                        regionBox.size.y * 0.5f * Mathf.Abs(lossyScale.y),
+                        regionBox.size.z * 0.5f * Mathf.Abs(lossyScale.z));
+                    Vector3 eulerAngles = regionBox.transform.eulerAngles;
+
+                    writer.WriteStartElement("Bounds");
+                    writer.WriteAttributeString("cx", worldCenter.x.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                    writer.WriteAttributeString("cy", worldCenter.y.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                    writer.WriteAttributeString("cz", worldCenter.z.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                    writer.WriteAttributeString("ex", halfExtents.x.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                    writer.WriteAttributeString("ey", halfExtents.y.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                    writer.WriteAttributeString("ez", halfExtents.z.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                    writer.WriteAttributeString("rx", eulerAngles.x.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                    writer.WriteAttributeString("ry", eulerAngles.y.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                    writer.WriteAttributeString("rz", eulerAngles.z.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
+                    writer.WriteEndElement();
+                }
+                writer.WriteEndElement();
+            }
+            writer.WriteEndElement();
+            writer.WriteEndDocument();
+        }
+
+        AssetDatabase.Refresh();
+        return path;
     }
 
     private void ResetRegions()

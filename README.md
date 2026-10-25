@@ -143,13 +143,62 @@ Important:
 - the scene bundle name must match the world name the server will use
 - if the server region world name is `TestWorld`, the manifest should contain a scene bundle named `TestWorld`
 
+### World map
+
+The game's map window shows a zoomable, top-down map of the world the player is in. To give your
+world one, render it and ship it with the mod:
+
+1. Open the map scene. Check that its `MapData` is set up:
+   - `Map Extents` covers the whole world: its size in X and Z, centred on the scene's origin.
+     The same values tell the server how big the world is.
+   - `Origin Offset` is 0, because the map takes scene positions as world positions.
+2. Run `LoA Toolkit -> Custom Assets -> Render World Map`.
+   - It asks before starting, and shows the world's size and the number of shots. The world is
+     shot from straight above in 512 m squares, at 2 pixels per metre.
+   - It reopens the scene for the render and puts your open scenes back afterwards. Nothing in
+     the scene is changed or saved.
+   - The map is written to `Assets/UI/Maps/Tiles/<SceneName>/`: `manifest.json`, plus zoom levels
+     `0`, `1`, ... of 256 px tiles saved as `.jpg.bytes`.
+3. Optional: save your regions in the `Region Editor`. Besides the server's `WorldData.xml`, it
+   writes `RegionData.xml` into the same folder, so the map shows your areas' names. It also
+   shows the `NoHousing` region when the player turns on the housing overlay.
+4. Build the mod package as usual.
+   - For every scene in `Mod Scenes` with a rendered map, the build adds a client object bundle
+     named `<SceneName>_worldmap` (for example `TestWorld_worldmap`). It is listed in
+     `mod-manifest.json` and in **Launcher Bundle URLs**.
+   - You don't need an object library for this bundle.
+   - With a Steam Workshop package, the client finds the bundle through the manifest.
+   - With web bundles, add it to the server config like any other client bundle. See
+     [Local bundles](#local-bundles-while-developing).
+
+Render again whenever the world changes: the map is a picture of the scene at the time you
+rendered it, and nothing updates it for you.
+
+What the map shows:
+
+- Lighting is the map's own: one sun from the north-west, no fog, and no lamps or other local
+  lights. The sun is the light named `Sun`, or else the brightest directional light.
+- Particles, terrain grass and anything on the `UI` layer are left out.
+- Anything on the `Water` layer is drawn flat blue, the same colour as the open sea around the world.
+- Only the map scene itself is drawn. Parts of the world streamed in from other scenes (World
+  Streamer) are not.
+
+Players need a game client with mod world map support:
+
+- With an older client, the window shows the classic map.
+- Older clients also log a harmless "did not contain a ClientObjectLibrary" error for the
+  `_worldmap` bundle.
+- Without a rendered map, the classic map window shows your world's image from a UI texture
+  library (`Assets/UI/Maps/<SceneName>.png`), if you made one.
+
 ## Regions, Paths, And Seed Objects
 
 These editors live under `LoA Toolkit -> Dynamic Editors` and operate on the
 scene that is currently open. Use them to author server-side data for your own
 custom map:
 
-- `Region Editor` — named areas the server tests locations against
+- `Region Editor` — named areas the server tests locations against (also written for the
+  [world map](#world-map), for its area names)
 - `Path Editor` — waypoint paths (guard patrols, camera splines)
 - `Seed Object Editor` — spawners and other templated objects
 - `Prefab Editor` — permanent object placement
@@ -456,6 +505,7 @@ package:
 <Mod Name="my-mod">
   <ClientBundle Type="Scene" Name="TestDungeon">http://localhost:8000/Bundles/Scenes/TestDungeon</ClientBundle>
   <ClientBundle Type="ClientObjects" Name="TestObjectLibrary">http://localhost:8000/Bundles/Objects/TestObjectLibrary</ClientBundle>
+  <ClientBundle Type="ClientObjects" Name="TestDungeon_worldmap">http://localhost:8000/Bundles/Objects/TestDungeon_worldmap</ClientBundle>
 </Mod>
 ```
 
