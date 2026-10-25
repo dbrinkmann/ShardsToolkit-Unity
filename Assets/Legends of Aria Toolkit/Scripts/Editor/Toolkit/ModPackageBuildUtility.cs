@@ -236,6 +236,14 @@ public static class ModPackageBuildUtility
             throw new Exception("Scene '" + scene.name + "' is missing a MapData component.");
         }
 
+        string visibleFog = MapFog.DescribeVisibleFog();
+        if (visibleFog != null)
+        {
+            Debug.LogWarning("[Map fog] Map '" + scene.name + "' will show " + visibleFog + " in game. The game turns Unity's fog on "
+                + "in every map, even when Fog is unticked in the Lighting window. If you didn't mean to have fog, use "
+                + "LoA Toolkit/Utils/Remove Fog From Open Map, or set Fog Mode to Exponential and Density to 0.");
+        }
+
         int bundleVersion = mapData.BundleVersion + 1;
         SetSerializedInt(mapData, "BundleVersion", bundleVersion);
 

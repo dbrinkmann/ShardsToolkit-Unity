@@ -53,6 +53,9 @@ public class MapWizard : EditorWindow
                 GameObject cameraInst = PrefabUtility.InstantiatePrefab(cameraPrefab) as GameObject;
             }
 
+            // a new scene's default fog is invisible in the editor but covers the map in grey in game
+            MapFog.ApplyGameDefaults();
+
             TagsHelpers.AddTagsAndLayers();
 
             EditorSceneManager.SaveOpenScenes();
