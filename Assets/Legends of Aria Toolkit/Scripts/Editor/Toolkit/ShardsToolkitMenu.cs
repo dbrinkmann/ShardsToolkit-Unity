@@ -51,6 +51,13 @@ public class ShardsToolkitMenu
         clientObjectWizard.titleContent = new GUIContent("Create Client Object");
     }
 
+    [MenuItem("LoA Toolkit/Custom Assets/Generate Collision Boxes", false, 7)]
+    public static void ShowCollisionBoxGenerator()
+    {
+        CollisionBoxGenerator generator = EditorWindow.GetWindow(typeof(CollisionBoxGenerator)) as CollisionBoxGenerator;
+        generator.titleContent = new GUIContent("Generate Collision Boxes");
+    }
+
     [MenuItem("LoA Toolkit/Custom Assets/Create New UI Texture Library", false, 7)]
     public static void CreateNewUITextureLibrary()
     {

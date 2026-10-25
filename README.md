@@ -199,6 +199,25 @@ at build time and the object will have no collision in game, with no warning.
 The wizard's `Add Box Collider` option creates that child for you. Two other
 child names are recognised the same way: `ObjectBounds` and `RoofBounds`.
 
+Make each `Collider` a direct child of the prefab root. The export measures a
+collider's position from its parent, so one nested under an offset child lands
+in the wrong place.
+
+If your model already has Unity collision (mesh, box, sphere or capsule
+colliders), `LoA Toolkit -> Custom Assets -> Generate Collision Boxes` builds the
+`Collider` children from it for the selected prefabs:
+
+- box, sphere and capsule colliders each become one box around them
+- a mesh collider becomes a few boxes that follow its outline on the ground
+  (`Footprint`), or one box around it (`Single Box`)
+- overhangs high above the base (tree canopies, roofs) and low floors are
+  skipped by default, so the ground under and inside them stays walkable
+
+The server collides against upright boxes only: a footprint rotated about Y,
+plus a height. The generated boxes follow that, so a sloped or curved shape is
+covered by its outline, not its surface. Your original colliders are left in
+place.
+
 Slot 0 of a library is reserved as the invalid client id and is always left
 empty. Objects start at index 1.
 
