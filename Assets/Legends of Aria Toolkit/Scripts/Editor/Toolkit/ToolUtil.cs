@@ -395,7 +395,7 @@ public partial class ToolUtil
     public static void CopyToClipboard(string contents)
     {
         TextEditor te = new TextEditor();
-        te.content = new GUIContent(contents);
+        te.text = contents;
         te.SelectAll();
         te.Copy();
     }
