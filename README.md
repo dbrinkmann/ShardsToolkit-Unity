@@ -12,7 +12,7 @@ The toolkit builds a single Workshop package per mod. That package contains the 
 
 ## Requirements
 
-- Unity 2022.3.62f3 (LTS), matching the Shards game client — see `ProjectSettings/ProjectVersion.txt`.
+- Unity 6000.3.11f1 (Unity 6.3 LTS), matching the Shards game client — see `ProjectSettings/ProjectVersion.txt`.
 - [Git LFS](https://git-lfs.com/). A handful of binary assets in this
   repository (a couple of editor textures, the `ShardsXML.dll`, the
   collision-paint terrain template) are tracked via LFS. Install Git LFS
@@ -64,6 +64,29 @@ For a client object library named `my-mod`, the toolkit writes:
 These files are not part of the Steam Workshop package.
 
 ## Setup
+
+### Unity 6.3 migration
+
+Open this checkout with **6000.3.11f1** and allow the first asset import to finish.
+Rebuild mod packages with this editor for the matching Unity 6.3 game client.
+Keep a separate 2022.3 checkout if you still need to author packages for an older
+client. Unity's [upgrade guide](https://docs.unity3d.com/6000.3/Documentation/Manual/UpgradeGuides.html)
+describes the engine changes.
+
+The upgrade includes updated project/quality settings, Unity 6's UI and test
+packages, the clipboard API replacement, and tree/terrain shader compatibility
+fixes. TextMeshPro is supplied by `com.unity.ugui` rather than a separate package.
+
+Run the editor tests from **Window -> General -> Test Runner -> EditMode**, or:
+
+```powershell
+& "C:\Program Files\Unity\Hub\Editor\6000.3.11f1\Editor\Unity.exe" -batchmode -projectPath "$PWD" -runTests -testPlatform EditMode -testResults "$PWD\TestResults\editmode.xml" -logFile "$PWD\Logs\editmode.log"
+```
+
+The tests include rendering a small world map, building its asset bundle and
+loading it back, as well as creature/sound tooling and shader import checks.
+
+### Toolkit configuration
 
 Open:
 

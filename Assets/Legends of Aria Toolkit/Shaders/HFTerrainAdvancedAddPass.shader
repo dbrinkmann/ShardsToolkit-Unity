@@ -17,7 +17,8 @@ SubShader {
 	}
 CGPROGRAM
 #pragma surface surf Lambert decal:add
-#pragma target 3.0
+// Unity 6's generated lighting data exceeds the SM3 interpolator limit.
+#pragma target 3.5
 
 struct Input {
 	float2 uv_Control : TEXCOORD0;
